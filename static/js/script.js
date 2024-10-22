@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const conversionProgress = document.getElementById('conversion-progress');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
+    const errorMessage = document.getElementById('error-message');
 
     const downloadBtn = document.getElementById('download-btn');
     if (downloadBtn) {
@@ -44,13 +45,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (downloadBtn) {
                         downloadBtn.disabled = false;
                     }
+                    hideError();
                 } catch (error) {
                     console.error('Error parsing video info:', error);
                     showError('Error parsing video information. Please try again.');
                 }
             } else {
                 console.error('Error fetching video information:', xhr.status, xhr.statusText);
-                showError('Error fetching video information. Please check the URL and try again.');
+                showError(JSON.parse(xhr.responseText).error || 'Error fetching video information. Please check the URL and try again.');
             }
         };
         xhr.onerror = function() {
@@ -72,52 +74,57 @@ document.addEventListener('DOMContentLoaded', function() {
             downloadBtn.disabled = true;
         }
         conversionProgress.classList.remove('d-none');
+        hideError();
 
-        const eventSource = new EventSource('/convert?video_url=' + encodeURIComponent(videoUrl));
+        try {
+            const eventSource = new EventSource('/convert?video_url=' + encodeURIComponent(videoUrl));
 
-        eventSource.onmessage = function(event) {
-            console.log('Received event:', event.data);
-            try {
-                const data = JSON.parse(event.data);
-                console.log('Parsed data:', data);
-                if (data.progress) {
-                    updateProgress(parseFloat(data.progress));
-                }
-                if (data.status === 'completed') {
-                    eventSource.close();
-                    downloadFile(data.filename);
-                    if (downloadBtn) {
-                        downloadBtn.disabled = false;
+            eventSource.onmessage = function(event) {
+                console.log('Received event:', event.data);
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('Parsed data:', data);
+                    if (data.progress) {
+                        updateProgress(parseFloat(data.progress));
                     }
-                }
-                if (data.error) {
-                    showError(data.error);
+                    if (data.status === 'completed') {
+                        eventSource.close();
+                        downloadFile(data.filename);
+                        if (downloadBtn) {
+                            downloadBtn.disabled = false;
+                        }
+                    }
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                } catch (error) {
+                    console.error('Error parsing event data:', error);
+                    showError(error.message || 'Error during conversion. Please try again.');
                     eventSource.close();
                     if (downloadBtn) {
                         downloadBtn.disabled = false;
                     }
                     conversionProgress.classList.add('d-none');
                 }
-            } catch (error) {
-                console.error('Error parsing event data:', error);
-                showError('Error during conversion. Please try again.');
+            };
+
+            eventSource.onerror = function(error) {
+                console.error('EventSource failed:', error);
+                showError('Error during conversion. Please try again later.');
                 eventSource.close();
                 if (downloadBtn) {
                     downloadBtn.disabled = false;
                 }
                 conversionProgress.classList.add('d-none');
-            }
-        };
-
-        eventSource.onerror = function(error) {
-            console.error('EventSource failed:', error);
-            showError('Error during conversion. Please try again later.');
-            eventSource.close();
+            };
+        } catch (error) {
+            console.error('Error setting up EventSource:', error);
+            showError('Error starting conversion. Please try again.');
             if (downloadBtn) {
                 downloadBtn.disabled = false;
             }
             conversionProgress.classList.add('d-none');
-        };
+        }
     }
 
     function updateProgress(percent) {
@@ -135,8 +142,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showError(message) {
         console.error('Error:', message);
-        alert(message);
-        // TODO: Implement a more user-friendly error display method
-        // For example, updating a dedicated error message element on the page
+        errorMessage.textContent = message;
+        errorMessage.classList.remove('d-none');
+    }
+
+    function hideError() {
+        errorMessage.textContent = '';
+        errorMessage.classList.add('d-none');
     }
 });
