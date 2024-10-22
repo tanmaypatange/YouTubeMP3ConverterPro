@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const lastLine = lines[lines.length - 2];
             if (lastLine && lastLine.startsWith('data: ')) {
                 const data = JSON.parse(lastLine.substring(6));
-                console.log('Received data:', data);  // Add this line
+                console.log('Received data:', data);
                 if (data.progress) {
                     updateProgress(parseFloat(data.progress));
                 }
@@ -127,33 +127,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function downloadFile(filename) {
         console.log('Attempting to download file:', filename);
-        fetch('/download/' + encodeURIComponent(filename))
-            .then(response => {
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error('File not found. Please try converting again.');
-                    }
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Unknown error occurred');
-                    });
-                }
-                return response.blob();
-            })
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                console.log('File download initiated successfully');
-            })
-            .catch(error => {
-                console.error('Error downloading file:', error.message);
-                showError('Error downloading file: ' + error.message);
-            });
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = '/download/' + encodeURIComponent(filename);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        console.log('File download initiated');
     }
 
     function showError(message) {

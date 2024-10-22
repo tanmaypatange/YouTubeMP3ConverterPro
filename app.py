@@ -107,17 +107,14 @@ def convert():
                 logger.info(f"Starting download for video: {info['title']}")
                 ydl.download([video_url])
 
-            file_path = os.path.join(DOWNLOAD_DIR, filename)
-            logger.info(f"Conversion completed. Checking file: {file_path}")
-            logger.info(f"File exists: {os.path.exists(file_path)}")
-            if os.path.exists(file_path):
-                logger.info(f"File size: {os.path.getsize(file_path)} bytes")
-                yield f"data: {json.dumps({'filename': filename, 'status': 'completed'})}\n\n"
+            converted_files = glob.glob(os.path.join(DOWNLOAD_DIR, f"{safe_title[:30]}*.mp3"))
+            if converted_files:
+                actual_filename = os.path.basename(converted_files[0])
+                logger.info(f"Actual file created: {actual_filename}")
+                yield f"data: {json.dumps({'filename': actual_filename, 'status': 'completed'})}\n\n"
             else:
-                logger.error(f"File not found after conversion: {file_path}")
-                # List all files in the download directory
-                logger.info(f"Files in download directory: {os.listdir(DOWNLOAD_DIR)}")
-                yield f"data: {json.dumps({'error': 'File not found after conversion'})}\n\n"
+                logger.error(f"No MP3 file found in downloads directory")
+                yield f"data: {json.dumps({'error': 'No MP3 file found after conversion'})}\n\n"
 
         except Exception as e:
             logger.error(f"Error during conversion: {str(e)}")
@@ -133,17 +130,12 @@ def download(filename):
     logger.info(f"Download requested for file: {filename}")
     file_path = os.path.join(DOWNLOAD_DIR, filename)
     logger.info(f"Full file path: {file_path}")
-    logger.info(f"File exists: {os.path.exists(file_path)}")
-    if not os.path.exists(file_path):
-        logger.error(f"File not found: {file_path}")
-        # List all files in the download directory
-        logger.info(f"Files in download directory: {os.listdir(DOWNLOAD_DIR)}")
-        return jsonify({'error': f'File not found: {filename}. Please try converting again.'}), 404
-    try:
+    if os.path.exists(file_path):
+        logger.info(f"File found, initiating download")
         return send_file(file_path, as_attachment=True)
-    except Exception as e:
-        logger.error(f"Error sending file: {str(e)}")
-        return jsonify({'error': f'Error sending file: {str(e)}. Please try again.'}), 500
+    else:
+        logger.error(f"File not found: {file_path}")
+        return jsonify({'error': f'File not found: {filename}'}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
