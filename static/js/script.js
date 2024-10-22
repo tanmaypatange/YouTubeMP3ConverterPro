@@ -32,24 +32,25 @@ document.addEventListener('DOMContentLoaded', function() {
             if (xhr.status === 200) {
                 try {
                     const response = JSON.parse(xhr.responseText);
-                    console.log('Video info received:', response);
-                    if (response.title && response.thumbnail && response.file_sizes) {
-                        videoThumbnail.src = response.thumbnail;
-                        videoTitle.textContent = response.title;
-                        fileSizes = response.file_sizes;
-                        updateFileSize();
-                        videoInfo.classList.remove('d-none');
-                        downloadBtn.disabled = false;
-                    } else {
+                    console.log('Raw response:', xhr.responseText);
+                    console.log('Parsed response:', response);
+
+                    if (!response.title || !response.thumbnail || !response.file_sizes) {
                         throw new Error('Incomplete video information received');
                     }
+
+                    videoThumbnail.src = response.thumbnail;
+                    videoTitle.textContent = response.title;
+                    fileSizes = response.file_sizes;
+                    updateFileSize();
+                    videoInfo.classList.remove('d-none');
+                    downloadBtn.disabled = false;
                 } catch (error) {
                     console.error('Error parsing video info:', error);
-                    console.log('Raw response:', xhr.responseText);
                     showError('Error parsing video information. Please try again.');
                 }
             } else {
-                console.error('Error fetching video information:', xhr.responseText);
+                console.error('Error fetching video information:', xhr.status, xhr.statusText);
                 showError('Error fetching video information. Please check the URL and try again.');
             }
         };
@@ -131,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showError(message) {
         alert(message);
-        // You can implement a more user-friendly error display method here
+        // TODO: Implement a more user-friendly error display method
         // For example, updating a dedicated error message element on the page
     }
 });
