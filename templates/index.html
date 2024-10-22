@@ -7,15 +7,20 @@
     <meta name="description" content="Convert YouTube videos to MP3 format easily and quickly.">
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="text-center mb-4">YouTube to MP3 Converter</h1>
+        <h1 class="text-center mb-4">
+            <i class="fab fa-youtube me-2"></i>YouTube to MP3 Converter
+        </h1>
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="input-group mb-3">
                     <input type="text" id="video-url" class="form-control" placeholder="Enter YouTube URL">
-                    <button class="btn btn-secondary" type="button" id="fetch-info">Fetch Info</button>
+                    <button class="btn btn-secondary" type="button" id="fetch-info">
+                        <i class="fas fa-search me-1"></i>Fetch Info
+                    </button>
                 </div>
             </div>
         </div>
@@ -29,7 +34,9 @@
                         <div class="col-md-8">
                             <div class="card-body">
                                 <h5 id="video-title" class="card-title"></h5>
-                                <button id="download-btn" class="btn btn-primary mt-3">Download MP3</button>
+                                <button id="download-btn" class="btn btn-primary mt-3">
+                                    <i class="fas fa-download me-1"></i>Download MP3
+                                </button>
                             </div>
                         </div>
                     </div>

@@ -1,1 +1,89 @@
-/* Add any custom styles here if needed */
+:root {
+  --youtube-red: #FF0000;
+  --youtube-black: #282828;
+  --youtube-white: #FFFFFF;
+}
+
+body {
+  background-color: var(--youtube-black);
+  color: var(--youtube-white);
+}
+
+.container {
+  max-width: 800px;
+}
+
+h1 {
+  color: var(--youtube-red);
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background-color: var(--youtube-black);
+  border: 1px solid var(--youtube-red);
+  transition: transform 0.3s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.btn-primary {
+  background-color: var(--youtube-red);
+  border-color: var(--youtube-red);
+}
+
+.btn-primary:hover {
+  background-color: #cc0000;
+  border-color: #cc0000;
+}
+
+.btn-secondary {
+  background-color: var(--youtube-white);
+  border-color: var(--youtube-white);
+  color: var(--youtube-black);
+}
+
+.btn-secondary:hover {
+  background-color: #f0f0f0;
+  border-color: #f0f0f0;
+  color: var(--youtube-black);
+}
+
+.progress-bar {
+  background-color: var(--youtube-red);
+}
+
+#video-thumbnail {
+  border: 2px solid var(--youtube-red);
+  border-radius: 8px;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+#fetch-info:hover, #download-btn:hover {
+  animation: pulse 1s infinite;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 15px;
+  }
+  
+  h1 {
+    font-size: 1.8rem;
+  }
+}
