@@ -9,7 +9,6 @@ import tempfile
 from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context
 from googleapiclient.discovery import build
 import yt_dlp
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
@@ -76,40 +75,34 @@ def convert():
                 elif d['status'] == 'finished':
                     yield f"data: {json.dumps({'progress': '100', 'status': 'finished'})}\n\n"
 
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '128',
-                }],
-                'outtmpl': os.path.join(tempfile.gettempdir(), '%(title)s.%(ext)s'),
-                'progress_hooks': [progress_hook],
-            }
-
-            start_time = time.time()
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            with yt_dlp.YoutubeDL() as ydl:
                 info = ydl.extract_info(video_url, download=False)
                 if info is None:
                     logger.error(f"Failed to extract video information for URL: {video_url}")
                     yield f"data: {json.dumps({'error': 'Failed to extract video information'})}\n\n"
                     return
                 title = info['title']
-                safe_title = re.sub(r'[^\w\-_\. ]', '_', info['title'])
+                safe_title = re.sub(r'[^\w\-_\. ]', '_', title)
                 safe_title = safe_title.replace(' ', '_')
                 filename = f"{safe_title}.mp3"
+                
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '128',
+                    }],
+                    'outtmpl': os.path.join(tempfile.gettempdir(), filename),
+                    'progress_hooks': [progress_hook],
+                }
+
+            start_time = time.time()
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 logger.info(f"Starting download for video: {title}")
                 ydl.download([video_url])
 
-            converted_files = glob.glob(os.path.join(tempfile.gettempdir(), '*.mp3'))
-            if converted_files:
-                actual_filename = os.path.basename(converted_files[0])
-                logger.info(f"Actual file created: {actual_filename}")
-                yield f"data: {json.dumps({'filename': actual_filename, 'status': 'completed'})}\n\n"
-            else:
-                logger.error("No MP3 file found in temporary directory")
-                yield f"data: {json.dumps({'error': 'No MP3 file found after conversion'})}\n\n"
-                return
+            yield f"data: {json.dumps({'filename': filename, 'status': 'completed'})}\n\n"
 
         except Exception as e:
             logger.error(f"Error during conversion: {str(e)}")
@@ -120,15 +113,14 @@ def convert():
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
-@app.route('/download/<filename>')
+@app.route('/download/<path:filename>')
 def download(filename):
     logger.info(f"Download requested for file: {filename}")
-    safe_filename = secure_filename(filename)
-    file_path = os.path.join(tempfile.gettempdir(), safe_filename)
+    file_path = os.path.join(tempfile.gettempdir(), filename)
     logger.info(f"Attempting to send file: {file_path}")
     if not os.path.exists(file_path):
         logger.error(f"File not found: {file_path}")
-        return jsonify({'error': f'File not found: {safe_filename}'}), 404
+        return jsonify({'error': f'File not found: {filename}'}), 404
     try:
         return send_file(file_path, as_attachment=True)
     except Exception as e:
