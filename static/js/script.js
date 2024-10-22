@@ -73,47 +73,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         conversionProgress.classList.remove('d-none');
 
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/convert', true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onload = function() {
-            if (xhr.status === 200) {
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    console.log('Conversion successful:', response);
-                    if (response.filename) {
-                        downloadFile(response.filename);
-                    } else {
-                        throw new Error('Invalid conversion response');
-                    }
-                } catch (error) {
-                    console.error('Error parsing conversion response:', error);
-                    showError('Error during conversion. Please try again.');
+        const eventSource = new EventSource('/convert?video_url=' + encodeURIComponent(videoUrl));
+
+        eventSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.progress) {
+                updateProgress(parseFloat(data.progress));
+            }
+            if (data.status === 'completed') {
+                eventSource.close();
+                downloadFile(data.filename);
+                if (downloadBtn) {
+                    downloadBtn.disabled = false;
                 }
-            } else {
-                console.error('Error converting video:', xhr.responseText);
-                showError('Error converting video. Please try again later.');
             }
+            if (data.error) {
+                showError(data.error);
+                eventSource.close();
+                if (downloadBtn) {
+                    downloadBtn.disabled = false;
+                }
+                conversionProgress.classList.add('d-none');
+            }
+        };
+
+        eventSource.onerror = function() {
+            console.error('EventSource failed');
+            showError('Error during conversion. Please try again later.');
+            eventSource.close();
             if (downloadBtn) {
                 downloadBtn.disabled = false;
             }
             conversionProgress.classList.add('d-none');
         };
-        xhr.onerror = function() {
-            console.error('Network error during conversion');
-            showError('Network error during conversion. Please check your internet connection and try again.');
-            if (downloadBtn) {
-                downloadBtn.disabled = false;
-            }
-            conversionProgress.classList.add('d-none');
-        };
-        xhr.onprogress = function(event) {
-            if (event.lengthComputable) {
-                const percentComplete = (event.loaded / event.total) * 100;
-                updateProgress(percentComplete);
-            }
-        };
-        xhr.send('video_url=' + encodeURIComponent(videoUrl));
     }
 
     function updateProgress(percent) {

@@ -2,7 +2,7 @@ import os
 import urllib.parse
 import logging
 import re
-from flask import Flask, render_template, request, jsonify, send_file, Response
+from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context
 from googleapiclient.discovery import build
 import yt_dlp
 
@@ -55,40 +55,46 @@ def get_video_info():
 def convert():
     video_url = request.form['video_url']
     
-    try:
-        logger.info(f"Starting conversion for URL: {video_url}")
+    def generate():
+        try:
+            logger.info(f"Starting conversion for URL: {video_url}")
 
-        def progress_hook(d):
-            if d['status'] == 'downloading':
-                percent = d['_percent_str']
-                yield f"data: {percent}\n\n"
-            elif d['status'] == 'finished':
-                yield "data: 100%\n\n"
+            def progress_hook(d):
+                if d['status'] == 'downloading':
+                    percent = d.get('_percent_str', 'N/A')
+                    yield f"data: {{'progress': '{percent}', 'status': 'downloading'}}\n\n"
+                elif d['status'] == 'finished':
+                    yield f"data: {{'progress': '100%', 'status': 'finished'}}\n\n"
 
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            'outtmpl': 'downloads/%(title)s.%(ext)s',
-            'progress_hooks': [progress_hook],
-        }
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+                'outtmpl': 'downloads/%(title)s.%(ext)s',
+                'progress_hooks': [progress_hook],
+            }
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=False)
-            title = info['title']
-            safe_title = re.sub(r'[^\w\-_\. ]', '', title)
-            safe_title = safe_title.replace(' ', '_')
-            filename = f"{safe_title}.mp3"
-            ydl.download([video_url])
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(video_url, download=False)
+                if info is None:
+                    yield f"data: {{'error': 'Failed to extract video information'}}\n\n"
+                    return
+                title = info['title']
+                safe_title = re.sub(r'[^\w\-_\. ]', '', title)
+                safe_title = safe_title.replace(' ', '_')
+                filename = f"{safe_title}.mp3"
+                ydl.download([video_url])
 
-        return Response(progress_hook({}), mimetype='text/event-stream')
+            yield f"data: {{'filename': '{filename}', 'status': 'completed'}}\n\n"
 
-    except Exception as e:
-        logger.error(f"Error during conversion: {str(e)}")
-        return jsonify({'error': 'Error during conversion'}), 500
+        except Exception as e:
+            logger.error(f"Error during conversion: {str(e)}")
+            yield f"data: {{'error': 'Error during conversion'}}\n\n"
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 @app.route('/download/<filename>')
 def download(filename):

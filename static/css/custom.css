@@ -56,12 +56,47 @@ h1 {
   height: 25px;
   background-color: var(--bs-dark);
   border: 1px solid var(--youtube-red);
+  overflow: hidden;
 }
 
 .progress-bar {
   background-color: var(--youtube-red);
   color: var(--bs-light);
   font-weight: bold;
+  transition: width 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.2) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.2) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 50px 50px;
+  animation: stripes 1s linear infinite;
+  z-index: 1;
+}
+
+@keyframes stripes {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 50px 0;
+  }
 }
 
 #video-thumbnail {
@@ -101,6 +136,7 @@ h1 {
 #progress-text {
   font-weight: bold;
   color: var(--youtube-red);
+  margin-top: 0.5rem;
 }
 
 @media (max-width: 768px) {
