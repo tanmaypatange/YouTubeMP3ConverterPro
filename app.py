@@ -98,6 +98,12 @@ def convert():
                 logger.info(f"Starting download for video: {title}")
                 ydl.download([video_url])
 
+            output_path = f'downloads/{safe_title}.mp3'
+            if not os.path.exists(output_path):
+                logger.error(f"File not found: {output_path}")
+                yield f"data: {json.dumps({'error': 'File not found after conversion'})}\n\n"
+                return
+
             logger.info(f"Conversion completed for video: {title}")
             yield f"data: {json.dumps({'filename': filename, 'status': 'completed'})}\n\n"
 
@@ -113,7 +119,13 @@ def convert():
 @app.route('/download/<filename>')
 def download(filename):
     logger.info(f"Downloading file: {filename}")
-    return send_file(f'downloads/{filename}', as_attachment=True)
+    safe_filename = re.sub(r'[^\w\-_\. ]', '', filename)
+    safe_filename = safe_filename.replace(' ', '_')
+    file_path = os.path.join('downloads', safe_filename)
+    if not os.path.exists(file_path):
+        logger.error(f"File not found: {file_path}")
+        return jsonify({'error': 'File not found'}), 404
+    return send_file(file_path, as_attachment=True)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
