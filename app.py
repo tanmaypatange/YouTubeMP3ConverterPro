@@ -4,6 +4,7 @@ import logging
 import re
 import json
 import time
+import glob
 from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context
 from googleapiclient.discovery import build
 import yt_dlp
@@ -92,20 +93,29 @@ def convert():
                     yield f"data: {json.dumps({'error': 'Failed to extract video information'})}\n\n"
                     return
                 title = info['title']
-                safe_title = re.sub(r'[^\w\-_\. ]', '', title)
+                safe_title = re.sub(r'[^\w\-_\. ]', '_', title)
                 safe_title = safe_title.replace(' ', '_')
                 filename = f"{safe_title}.mp3"
                 logger.info(f"Starting download for video: {title}")
                 ydl.download([video_url])
 
-            output_path = f'downloads/{safe_title}.mp3'
+            converted_files = glob.glob('downloads/*.mp3')
+            if converted_files:
+                actual_filename = os.path.basename(converted_files[0])
+                logger.info(f"Actual file created: {actual_filename}")
+            else:
+                logger.error("No MP3 file found in downloads directory")
+                yield f"data: {json.dumps({'error': 'No MP3 file found after conversion'})}\n\n"
+                return
+
+            output_path = f'downloads/{actual_filename}'
             if not os.path.exists(output_path):
                 logger.error(f"File not found: {output_path}")
                 yield f"data: {json.dumps({'error': 'File not found after conversion'})}\n\n"
                 return
 
             logger.info(f"Conversion completed for video: {title}")
-            yield f"data: {json.dumps({'filename': filename, 'status': 'completed'})}\n\n"
+            yield f"data: {json.dumps({'filename': actual_filename, 'status': 'completed'})}\n\n"
 
         except Exception as e:
             logger.error(f"Error during conversion: {str(e)}")

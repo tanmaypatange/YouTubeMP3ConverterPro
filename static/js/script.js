@@ -96,6 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 if (data.error) {
+                    console.error('Conversion error:', data.error);
                     showError(data.error);
                     if (downloadBtn) {
                         downloadBtn.disabled = false;
