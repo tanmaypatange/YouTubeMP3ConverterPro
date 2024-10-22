@@ -33,24 +33,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     const response = JSON.parse(xhr.responseText);
                     console.log('Video info received:', response);
-                    videoThumbnail.src = response.thumbnail;
-                    videoTitle.textContent = response.title;
-                    fileSizes = response.file_sizes;
-                    updateFileSize();
-                    videoInfo.classList.remove('d-none');
-                    downloadBtn.disabled = false;
+                    if (response.title && response.thumbnail && response.file_sizes) {
+                        videoThumbnail.src = response.thumbnail;
+                        videoTitle.textContent = response.title;
+                        fileSizes = response.file_sizes;
+                        updateFileSize();
+                        videoInfo.classList.remove('d-none');
+                        downloadBtn.disabled = false;
+                    } else {
+                        throw new Error('Incomplete video information received');
+                    }
                 } catch (error) {
                     console.error('Error parsing video info:', error);
-                    showError('Error parsing video information');
+                    console.log('Raw response:', xhr.responseText);
+                    showError('Error parsing video information. Please try again.');
                 }
             } else {
                 console.error('Error fetching video information:', xhr.responseText);
-                showError('Error fetching video information');
+                showError('Error fetching video information. Please check the URL and try again.');
             }
         };
         xhr.onerror = function() {
             console.error('Network error while fetching video information');
-            showError('Network error while fetching video information');
+            showError('Network error while fetching video information. Please check your internet connection and try again.');
         };
         xhr.send('video_url=' + encodeURIComponent(videoUrl));
     }
@@ -84,21 +89,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     const response = JSON.parse(xhr.responseText);
                     console.log('Conversion successful:', response);
-                    downloadFile(response.filename);
+                    if (response.filename) {
+                        downloadFile(response.filename);
+                    } else {
+                        throw new Error('Invalid conversion response');
+                    }
                 } catch (error) {
                     console.error('Error parsing conversion response:', error);
-                    showError('Error during conversion');
+                    showError('Error during conversion. Please try again.');
                 }
             } else {
                 console.error('Error converting video:', xhr.responseText);
-                showError('Error converting video: ' + xhr.responseText);
+                showError('Error converting video. Please try again later.');
             }
             downloadBtn.disabled = false;
             conversionProgress.classList.add('d-none');
         };
         xhr.onerror = function() {
             console.error('Network error during conversion');
-            showError('Network error during conversion');
+            showError('Network error during conversion. Please check your internet connection and try again.');
             downloadBtn.disabled = false;
             conversionProgress.classList.add('d-none');
         };
@@ -122,5 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showError(message) {
         alert(message);
+        // You can implement a more user-friendly error display method here
+        // For example, updating a dedicated error message element on the page
     }
 });
