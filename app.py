@@ -7,8 +7,8 @@ from googleapiclient.discovery import build
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
 
-# YouTube API key (replace with your actual API key)
-YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY"
+# YouTube API key from environment variable
+YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
 youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
 
 @app.route('/')
