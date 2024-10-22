@@ -3,6 +3,7 @@ import urllib.parse
 import logging
 import re
 import json
+import time
 from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context
 from googleapiclient.discovery import build
 import yt_dlp
@@ -74,12 +75,13 @@ def convert():
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
                     'preferredcodec': 'mp3',
-                    'preferredquality': '192',
+                    'preferredquality': '128',
                 }],
                 'outtmpl': 'downloads/%(title)s.%(ext)s',
                 'progress_hooks': [progress_hook],
             }
 
+            start_time = time.time()
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(video_url, download=False)
                 if info is None:
@@ -99,6 +101,9 @@ def convert():
         except Exception as e:
             logger.error(f"Error during conversion: {str(e)}")
             yield f"data: {json.dumps({'error': 'Error during conversion. Please try again later.'})}\n\n"
+        finally:
+            end_time = time.time()
+            logger.info(f"Conversion process took {end_time - start_time:.2f} seconds")
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 

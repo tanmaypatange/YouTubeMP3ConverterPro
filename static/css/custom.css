@@ -153,3 +153,20 @@ h1 {
     font-size: 1.8rem;
   }
 }
+
+/* Add a subtle pulsating animation to the progress bar */
+@keyframes progress-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.progress-bar {
+  animation: progress-pulse 2s ease-in-out infinite;
+}

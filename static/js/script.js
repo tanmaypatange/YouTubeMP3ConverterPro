@@ -76,6 +76,9 @@ document.addEventListener('DOMContentLoaded', function() {
         conversionProgress.classList.remove('d-none');
         hideError();
 
+        let lastProgressUpdate = Date.now();
+        const progressTimeout = 30000; // 30 seconds
+
         try {
             const eventSource = new EventSource('/convert?video_url=' + encodeURIComponent(videoUrl));
 
@@ -86,8 +89,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('Parsed data:', data);
                     if (data.progress) {
                         updateProgress(parseFloat(data.progress));
+                        lastProgressUpdate = Date.now();
                     }
                     if (data.status === 'completed') {
+                        console.log('Conversion completed');
                         eventSource.close();
                         downloadFile(data.filename);
                         if (downloadBtn) {
@@ -117,6 +122,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 conversionProgress.classList.add('d-none');
             };
+
+            // Set up a timeout to check for progress updates
+            const progressCheckInterval = setInterval(() => {
+                if (Date.now() - lastProgressUpdate > progressTimeout) {
+                    console.error('Conversion process timed out');
+                    clearInterval(progressCheckInterval);
+                    eventSource.close();
+                    showError('Conversion process timed out. Please try again.');
+                    if (downloadBtn) {
+                        downloadBtn.disabled = false;
+                    }
+                    conversionProgress.classList.add('d-none');
+                }
+            }, 5000);
+
         } catch (error) {
             console.error('Error setting up EventSource:', error);
             showError('Error starting conversion. Please try again.');
