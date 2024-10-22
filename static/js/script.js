@@ -76,19 +76,31 @@ document.addEventListener('DOMContentLoaded', function() {
         const eventSource = new EventSource('/convert?video_url=' + encodeURIComponent(videoUrl));
 
         eventSource.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            if (data.progress) {
-                updateProgress(parseFloat(data.progress));
-            }
-            if (data.status === 'completed') {
-                eventSource.close();
-                downloadFile(data.filename);
-                if (downloadBtn) {
-                    downloadBtn.disabled = false;
+            console.log('Received event:', event.data);
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Parsed data:', data);
+                if (data.progress) {
+                    updateProgress(parseFloat(data.progress));
                 }
-            }
-            if (data.error) {
-                showError(data.error);
+                if (data.status === 'completed') {
+                    eventSource.close();
+                    downloadFile(data.filename);
+                    if (downloadBtn) {
+                        downloadBtn.disabled = false;
+                    }
+                }
+                if (data.error) {
+                    showError(data.error);
+                    eventSource.close();
+                    if (downloadBtn) {
+                        downloadBtn.disabled = false;
+                    }
+                    conversionProgress.classList.add('d-none');
+                }
+            } catch (error) {
+                console.error('Error parsing event data:', error);
+                showError('Error during conversion. Please try again.');
                 eventSource.close();
                 if (downloadBtn) {
                     downloadBtn.disabled = false;
@@ -97,8 +109,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        eventSource.onerror = function() {
-            console.error('EventSource failed');
+        eventSource.onerror = function(error) {
+            console.error('EventSource failed:', error);
             showError('Error during conversion. Please try again later.');
             eventSource.close();
             if (downloadBtn) {
@@ -122,6 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showError(message) {
+        console.error('Error:', message);
         alert(message);
         // TODO: Implement a more user-friendly error display method
         // For example, updating a dedicated error message element on the page

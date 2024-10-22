@@ -2,6 +2,7 @@ import os
 import urllib.parse
 import logging
 import re
+import json
 from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context
 from googleapiclient.discovery import build
 import yt_dlp
@@ -51,9 +52,11 @@ def get_video_info():
         logger.error(f"Error fetching video info: {str(e)}")
         return jsonify({'error': 'Error fetching video information'}), 500
 
-@app.route('/convert', methods=['POST'])
+@app.route('/convert', methods=['GET'])
 def convert():
-    video_url = request.form['video_url']
+    video_url = request.args.get('video_url')
+    if not video_url:
+        return jsonify({'error': 'Missing video URL'}), 400
     
     def generate():
         try:
@@ -61,10 +64,10 @@ def convert():
 
             def progress_hook(d):
                 if d['status'] == 'downloading':
-                    percent = d.get('_percent_str', 'N/A')
-                    yield f"data: {{'progress': '{percent}', 'status': 'downloading'}}\n\n"
+                    percent = d.get('_percent_str', 'N/A').replace('%', '')
+                    yield f"data: {json.dumps({'progress': percent, 'status': 'downloading'})}\n\n"
                 elif d['status'] == 'finished':
-                    yield f"data: {{'progress': '100%', 'status': 'finished'}}\n\n"
+                    yield f"data: {json.dumps({'progress': '100', 'status': 'finished'})}\n\n"
 
             ydl_opts = {
                 'format': 'bestaudio/best',
@@ -80,19 +83,22 @@ def convert():
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(video_url, download=False)
                 if info is None:
-                    yield f"data: {{'error': 'Failed to extract video information'}}\n\n"
+                    logger.error(f"Failed to extract video information for URL: {video_url}")
+                    yield f"data: {json.dumps({'error': 'Failed to extract video information'})}\n\n"
                     return
                 title = info['title']
                 safe_title = re.sub(r'[^\w\-_\. ]', '', title)
                 safe_title = safe_title.replace(' ', '_')
                 filename = f"{safe_title}.mp3"
+                logger.info(f"Starting download for video: {title}")
                 ydl.download([video_url])
 
-            yield f"data: {{'filename': '{filename}', 'status': 'completed'}}\n\n"
+            logger.info(f"Conversion completed for video: {title}")
+            yield f"data: {json.dumps({'filename': filename, 'status': 'completed'})}\n\n"
 
         except Exception as e:
             logger.error(f"Error during conversion: {str(e)}")
-            yield f"data: {{'error': 'Error during conversion'}}\n\n"
+            yield f"data: {json.dumps({'error': 'Error during conversion'})}\n\n"
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
