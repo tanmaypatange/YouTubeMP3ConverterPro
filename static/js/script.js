@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const videoInfo = document.getElementById('video-info');
     const videoThumbnail = document.getElementById('video-thumbnail');
     const videoTitle = document.getElementById('video-title');
-    const conversionProgress = document.getElementById('conversion-progress');
-    const progressText = document.getElementById('progress-text');
+    const conversionStatus = document.getElementById('conversion-status');
+    const statusText = document.getElementById('status-text');
     const errorMessage = document.getElementById('error-message');
 
     const downloadBtn = document.getElementById('download-btn');
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (downloadBtn) {
             downloadBtn.disabled = true;
         }
-        conversionProgress.classList.remove('d-none');
+        conversionStatus.classList.remove('d-none');
         hideError();
 
         const xhr = new XMLHttpRequest();
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (downloadBtn) {
                         downloadBtn.disabled = false;
                     }
-                    conversionProgress.classList.add('d-none');
+                    conversionStatus.classList.add('d-none');
                 }
             }
         };
@@ -110,13 +110,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (downloadBtn) {
                 downloadBtn.disabled = false;
             }
-            conversionProgress.classList.add('d-none');
+            conversionStatus.classList.add('d-none');
         };
         xhr.send('video_url=' + encodeURIComponent(videoUrl));
     }
 
     function updateConversionStatus(status) {
-        progressText.textContent = status;
+        statusText.textContent = status;
     }
 
     function downloadFile(filename) {
