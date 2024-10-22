@@ -25,10 +25,13 @@ def index():
 
 @app.route('/get_video_info', methods=['POST'])
 def get_video_info():
-    video_url = request.form['video_url']
+    video_url = request.form.get('video_url')
+    if not video_url:
+        return jsonify({'error': 'Missing video URL'}), 400
+    
     try:
-        video_id = urllib.parse.urlparse(video_url).query.split('v=')[1]
-    except IndexError:
+        video_id = urllib.parse.parse_qs(urllib.parse.urlparse(video_url).query)['v'][0]
+    except (KeyError, IndexError):
         logger.error(f"Invalid YouTube URL: {video_url}")
         return jsonify({'error': 'Invalid YouTube URL. Please provide a valid YouTube video URL.'}), 400
     
@@ -53,9 +56,9 @@ def get_video_info():
         logger.error(f"Error fetching video info: {str(e)}")
         return jsonify({'error': 'Error fetching video information. Please try again later.'}), 500
 
-@app.route('/convert', methods=['GET'])
+@app.route('/convert', methods=['POST'])
 def convert():
-    video_url = request.args.get('video_url')
+    video_url = request.form.get('video_url')
     if not video_url:
         return jsonify({'error': 'Missing video URL'}), 400
     

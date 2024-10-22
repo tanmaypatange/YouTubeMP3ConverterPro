@@ -76,75 +76,43 @@ document.addEventListener('DOMContentLoaded', function() {
         conversionProgress.classList.remove('d-none');
         hideError();
 
-        let lastProgressUpdate = Date.now();
-        const progressTimeout = 30000; // 30 seconds
-
-        try {
-            const eventSource = new EventSource('/convert?video_url=' + encodeURIComponent(videoUrl));
-
-            eventSource.onmessage = function(event) {
-                console.log('Received event:', event.data);
-                try {
-                    const data = JSON.parse(event.data);
-                    console.log('Parsed data:', data);
-                    if (data.progress) {
-                        updateProgress(parseFloat(data.progress));
-                        lastProgressUpdate = Date.now();
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/convert', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.responseType = 'text';
+        xhr.onprogress = function() {
+            const lines = xhr.responseText.split('\n\n');
+            const lastLine = lines[lines.length - 2];
+            if (lastLine && lastLine.startsWith('data: ')) {
+                const data = JSON.parse(lastLine.substring(6));
+                if (data.progress) {
+                    updateProgress(parseFloat(data.progress));
+                }
+                if (data.status === 'completed') {
+                    console.log('Conversion completed');
+                    downloadFile(data.filename);
+                    if (downloadBtn) {
+                        downloadBtn.disabled = false;
                     }
-                    if (data.status === 'completed') {
-                        console.log('Conversion completed');
-                        eventSource.close();
-                        downloadFile(data.filename);
-                        if (downloadBtn) {
-                            downloadBtn.disabled = false;
-                        }
-                    }
-                    if (data.error) {
-                        throw new Error(data.error);
-                    }
-                } catch (error) {
-                    console.error('Error parsing event data:', error);
-                    showError(error.message || 'Error during conversion. Please try again.');
-                    eventSource.close();
+                }
+                if (data.error) {
+                    showError(data.error);
                     if (downloadBtn) {
                         downloadBtn.disabled = false;
                     }
                     conversionProgress.classList.add('d-none');
                 }
-            };
-
-            eventSource.onerror = function(error) {
-                console.error('EventSource failed:', error);
-                showError('Error during conversion. Please try again later.');
-                eventSource.close();
-                if (downloadBtn) {
-                    downloadBtn.disabled = false;
-                }
-                conversionProgress.classList.add('d-none');
-            };
-
-            // Set up a timeout to check for progress updates
-            const progressCheckInterval = setInterval(() => {
-                if (Date.now() - lastProgressUpdate > progressTimeout) {
-                    console.error('Conversion process timed out');
-                    clearInterval(progressCheckInterval);
-                    eventSource.close();
-                    showError('Conversion process timed out. Please try again.');
-                    if (downloadBtn) {
-                        downloadBtn.disabled = false;
-                    }
-                    conversionProgress.classList.add('d-none');
-                }
-            }, 5000);
-
-        } catch (error) {
-            console.error('Error setting up EventSource:', error);
-            showError('Error starting conversion. Please try again.');
+            }
+        };
+        xhr.onerror = function() {
+            console.error('Network error during conversion');
+            showError('Network error during conversion. Please check your internet connection and try again.');
             if (downloadBtn) {
                 downloadBtn.disabled = false;
             }
             conversionProgress.classList.add('d-none');
-        }
+        };
+        xhr.send('video_url=' + encodeURIComponent(videoUrl));
     }
 
     function updateProgress(percent) {
