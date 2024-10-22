@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const videoThumbnail = document.getElementById('video-thumbnail');
     const videoTitle = document.getElementById('video-title');
     const conversionProgress = document.getElementById('conversion-progress');
-    const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
     const errorMessage = document.getElementById('error-message');
 
@@ -86,17 +85,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (lastLine && lastLine.startsWith('data: ')) {
                 const data = JSON.parse(lastLine.substring(6));
                 console.log('Received data:', data);
-                if (data.progress) {
-                    updateProgress(parseFloat(data.progress));
-                }
-                if (data.status === 'completed') {
+                if (data.status === 'downloading') {
+                    updateConversionStatus('Your file is being processed. This usually takes a few seconds...');
+                } else if (data.status === 'completed') {
                     console.log('Conversion completed, filename:', data.filename);
+                    updateConversionStatus('Conversion complete! Your file will start downloading shortly.');
                     downloadFile(data.filename);
                     if (downloadBtn) {
                         downloadBtn.disabled = false;
                     }
-                }
-                if (data.error) {
+                } else if (data.error) {
                     console.error('Conversion error:', data.error);
                     showError(data.error);
                     if (downloadBtn) {
@@ -117,12 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
         xhr.send('video_url=' + encodeURIComponent(videoUrl));
     }
 
-    function updateProgress(percent) {
-        console.log('Conversion progress:', percent.toFixed(2) + '%');
-        progressBar.style.width = percent + '%';
-        progressBar.setAttribute('aria-valuenow', percent);
-        progressBar.textContent = percent.toFixed(0) + '%';
-        progressText.textContent = `Converting... ${percent.toFixed(0)}%`;
+    function updateConversionStatus(status) {
+        progressText.textContent = status;
     }
 
     function downloadFile(filename) {
