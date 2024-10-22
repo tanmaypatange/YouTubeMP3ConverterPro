@@ -30,7 +30,6 @@ def get_video_info():
         video_info = video_response['items'][0]['snippet']
         return jsonify({
             'title': video_info['title'],
-            'description': video_info['description'],
             'thumbnail': video_info['thumbnails']['medium']['url']
         })
     except Exception as e:
@@ -43,34 +42,25 @@ def convert():
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': 'downloads/%(title)s.%(ext)s',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(video_url, download=True)
-        filename = ydl.prepare_filename(info)
-    
-    # Convert the downloaded file to mp3 using ffmpeg
-    input_file = filename
-    output_file = os.path.splitext(filename)[0] + '.mp3'
-    
     try:
-        (
-            ffmpeg
-            .input(input_file)
-            .output(output_file, acodec='libmp3lame', audio_bitrate='192k')
-            .overwrite_output()
-            .run(capture_stdout=True, capture_stderr=True)
-        )
-        
-        # Remove the original downloaded file
-        os.remove(input_file)
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=True)
+            filename = ydl.prepare_filename(info)
+            mp3_filename = os.path.splitext(filename)[0] + '.mp3'
         
         return jsonify({
-            'filename': os.path.basename(output_file),
-            'filesize': os.path.getsize(output_file)
+            'filename': os.path.basename(mp3_filename),
+            'filesize': os.path.getsize(mp3_filename)
         })
-    except ffmpeg.Error as e:
-        return jsonify({'error': str(e.stderr.decode())}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/download/<filename>')
 def download(filename):

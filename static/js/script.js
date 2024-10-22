@@ -4,18 +4,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const videoInfo = document.getElementById('video-info');
     const videoThumbnail = document.getElementById('video-thumbnail');
     const videoTitle = document.getElementById('video-title');
-    const videoDescription = document.getElementById('video-description');
-    const convertBtn = document.getElementById('convert-btn');
+    const downloadBtn = document.getElementById('download-btn');
     const conversionProgress = document.getElementById('conversion-progress');
     const progressBar = document.getElementById('progress-bar');
-    const downloadSection = document.getElementById('download-section');
-    const downloadBtn = document.getElementById('download-btn');
-    const manualDownloadBtn = document.getElementById('manual-download-btn');
 
     fetchInfoBtn.addEventListener('click', fetchVideoInfo);
-    convertBtn.addEventListener('click', convertVideo);
-    downloadBtn.addEventListener('click', downloadMP3);
-    manualDownloadBtn.addEventListener('click', manualDownload);
+    downloadBtn.addEventListener('click', convertAndDownload);
 
     function fetchVideoInfo() {
         const videoUrl = videoUrlInput.value;
@@ -29,8 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = JSON.parse(xhr.responseText);
                 videoThumbnail.src = response.thumbnail;
                 videoTitle.textContent = response.title;
-                videoDescription.textContent = response.description;
                 videoInfo.classList.remove('d-none');
+                downloadBtn.disabled = false;
             } else {
                 alert('Error fetching video information');
             }
@@ -38,13 +32,12 @@ document.addEventListener('DOMContentLoaded', function() {
         xhr.send('video_url=' + encodeURIComponent(videoUrl));
     }
 
-    function convertVideo() {
+    function convertAndDownload() {
         const videoUrl = videoUrlInput.value;
         if (!videoUrl) return;
 
-        convertBtn.disabled = true;
+        downloadBtn.disabled = true;
         conversionProgress.classList.remove('d-none');
-        downloadSection.classList.add('d-none');
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/convert', true);
@@ -52,13 +45,13 @@ document.addEventListener('DOMContentLoaded', function() {
         xhr.onload = function() {
             if (xhr.status === 200) {
                 const response = JSON.parse(xhr.responseText);
-                downloadBtn.setAttribute('data-filename', response.filename);
-                downloadBtn.textContent = `Download MP3 (${formatFileSize(response.filesize)})`;
-                downloadSection.classList.remove('d-none');
-                convertBtn.disabled = false;
+                downloadFile(response.filename);
+                downloadBtn.disabled = false;
+                conversionProgress.classList.add('d-none');
             } else {
                 alert('Error converting video');
-                convertBtn.disabled = false;
+                downloadBtn.disabled = false;
+                conversionProgress.classList.add('d-none');
             }
         };
         xhr.upload.onprogress = function(event) {
@@ -72,26 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
         xhr.send('video_url=' + encodeURIComponent(videoUrl));
     }
 
-    function downloadMP3() {
-        const filename = downloadBtn.getAttribute('data-filename');
-        if (!filename) return;
-
+    function downloadFile(filename) {
         window.location.href = '/download/' + encodeURIComponent(filename);
-    }
-
-    function manualDownload() {
-        const filename = downloadBtn.getAttribute('data-filename');
-        if (!filename) return;
-
-        const link = document.createElement('a');
-        link.href = '/download/' + encodeURIComponent(filename);
-        link.download = filename;
-        link.click();
-    }
-
-    function formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
-        return (bytes / 1048576).toFixed(2) + ' MB';
     }
 });
