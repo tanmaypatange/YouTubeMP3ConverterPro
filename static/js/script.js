@@ -6,13 +6,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const videoTitle = document.getElementById('video-title');
     const bitrateSelect = document.getElementById('bitrate');
     const fileSizeInfo = document.getElementById('file-size');
-    const downloadBtn = document.getElementById('download-btn');
     const conversionProgress = document.getElementById('conversion-progress');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
 
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', convertAndDownload);
+    } else {
+        console.error('Download button not found in the DOM');
+    }
+
     fetchInfoBtn.addEventListener('click', fetchVideoInfo);
-    downloadBtn.addEventListener('click', convertAndDownload);
     bitrateSelect.addEventListener('change', updateFileSize);
 
     let fileSizes = {};
@@ -47,7 +52,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         fileSizeInfo.textContent = 'File size information not available';
                     }
                     videoInfo.classList.remove('d-none');
-                    downloadBtn.disabled = false;
+                    if (downloadBtn) {
+                        downloadBtn.disabled = false;
+                    }
                 } catch (error) {
                     console.error('Error parsing video info:', error);
                     showError('Error parsing video information. Please try again.');
@@ -82,7 +89,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         console.log('Starting conversion for:', videoUrl);
-        downloadBtn.disabled = true;
+        if (downloadBtn) {
+            downloadBtn.disabled = true;
+        }
         conversionProgress.classList.remove('d-none');
 
         const xhr = new XMLHttpRequest();
@@ -106,13 +115,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error converting video:', xhr.responseText);
                 showError('Error converting video. Please try again later.');
             }
-            downloadBtn.disabled = false;
+            if (downloadBtn) {
+                downloadBtn.disabled = false;
+            }
             conversionProgress.classList.add('d-none');
         };
         xhr.onerror = function() {
             console.error('Network error during conversion');
             showError('Network error during conversion. Please check your internet connection and try again.');
-            downloadBtn.disabled = false;
+            if (downloadBtn) {
+                downloadBtn.disabled = false;
+            }
             conversionProgress.classList.add('d-none');
         };
         xhr.upload.onprogress = function(event) {
