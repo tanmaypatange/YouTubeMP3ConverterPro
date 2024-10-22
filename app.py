@@ -5,6 +5,7 @@ import re
 import json
 import time
 import glob
+import tempfile
 from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context
 from googleapiclient.discovery import build
 import yt_dlp
@@ -82,7 +83,7 @@ def convert():
                     'preferredcodec': 'mp3',
                     'preferredquality': '128',
                 }],
-                'outtmpl': 'downloads/%(title)s.%(ext)s',
+                'outtmpl': os.path.join(tempfile.gettempdir(), '%(title)s.%(ext)s'),
                 'progress_hooks': [progress_hook],
             }
 
@@ -94,19 +95,19 @@ def convert():
                     yield f"data: {json.dumps({'error': 'Failed to extract video information'})}\n\n"
                     return
                 title = info['title']
-                safe_title = re.sub(r'[^\w\-_\. ]', '_', title)
+                safe_title = re.sub(r'[^\w\-_\. ]', '_', info['title'])
                 safe_title = safe_title.replace(' ', '_')
                 filename = f"{safe_title}.mp3"
                 logger.info(f"Starting download for video: {title}")
                 ydl.download([video_url])
 
-            converted_files = glob.glob('downloads/*.mp3')
+            converted_files = glob.glob(os.path.join(tempfile.gettempdir(), '*.mp3'))
             if converted_files:
                 actual_filename = os.path.basename(converted_files[0])
                 logger.info(f"Actual file created: {actual_filename}")
                 yield f"data: {json.dumps({'filename': actual_filename, 'status': 'completed'})}\n\n"
             else:
-                logger.error("No MP3 file found in downloads directory")
+                logger.error("No MP3 file found in temporary directory")
                 yield f"data: {json.dumps({'error': 'No MP3 file found after conversion'})}\n\n"
                 return
 
@@ -123,7 +124,7 @@ def convert():
 def download(filename):
     logger.info(f"Download requested for file: {filename}")
     safe_filename = secure_filename(filename)
-    file_path = os.path.join('downloads', safe_filename)
+    file_path = os.path.join(tempfile.gettempdir(), safe_filename)
     logger.info(f"Attempting to send file: {file_path}")
     if not os.path.exists(file_path):
         logger.error(f"File not found: {file_path}")

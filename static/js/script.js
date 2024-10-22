@@ -126,7 +126,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function downloadFile(filename) {
         console.log('Attempting to download file:', filename);
-        fetch('/download/' + encodeURIComponent(filename))
+        const encodedFilename = encodeURIComponent(filename);
+        fetch('/download/' + encodedFilename)
             .then(response => {
                 if (!response.ok) {
                     console.error('Server response not OK:', response.status, response.statusText);
