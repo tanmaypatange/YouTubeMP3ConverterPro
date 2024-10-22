@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube to MP3 Converter</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">YouTube to MP3 Converter</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="input-group mb-3">
+                    <input type="text" id="video-url" class="form-control" placeholder="Enter YouTube URL">
+                    <button class="btn btn-secondary" type="button" id="fetch-info">Fetch Info</button>
+                </div>
+            </div>
+        </div>
+        <div id="video-info" class="row justify-content-center d-none">
+            <div class="col-md-8">
+                <div class="card mb-3">
+                    <div class="row g-0">
+                        <div class="col-md-4">
+                            <img id="video-thumbnail" src="" alt="Video Thumbnail" class="img-fluid rounded-start">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 id="video-title" class="card-title"></h5>
+                                <p id="video-description" class="card-text"></p>
+                                <button id="convert-btn" class="btn btn-primary">Convert</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="conversion-progress" class="row justify-content-center d-none">
+            <div class="col-md-8">
+                <div class="progress mb-3">
+                    <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                </div>
+            </div>
+        </div>
+        <div id="download-section" class="row justify-content-center d-none">
+            <div class="col-md-8">
+                <div class="alert alert-success" role="alert">
+                    Successfully converted!
+                </div>
+                <div class="d-grid gap-2">
+                    <button id="download-btn" class="btn btn-success">Download MP3</button>
+                    <button id="manual-download-btn" class="btn btn-outline-secondary">Manual Download</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
