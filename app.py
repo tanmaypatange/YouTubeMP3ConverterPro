@@ -25,7 +25,11 @@ def index():
 @app.route('/get_video_info', methods=['POST'])
 def get_video_info():
     video_url = request.form['video_url']
-    video_id = urllib.parse.urlparse(video_url).query.split('v=')[1]
+    try:
+        video_id = urllib.parse.urlparse(video_url).query.split('v=')[1]
+    except IndexError:
+        logger.error(f"Invalid YouTube URL: {video_url}")
+        return jsonify({'error': 'Invalid YouTube URL'}), 400
     
     try:
         logger.info(f"Fetching video info for ID: {video_id}")
@@ -33,6 +37,10 @@ def get_video_info():
             part='snippet,contentDetails',
             id=video_id
         ).execute()
+
+        if not video_response['items']:
+            logger.error(f"No video found for ID: {video_id}")
+            return jsonify({'error': 'Video not found'}), 404
 
         video_info = video_response['items'][0]['snippet']
         duration = video_response['items'][0]['contentDetails']['duration']
@@ -52,7 +60,7 @@ def get_video_info():
         })
     except Exception as e:
         logger.error(f"Error fetching video info: {str(e)}")
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'error': 'Error fetching video information'}), 500
 
 @app.route('/convert', methods=['POST'])
 def convert():
@@ -92,7 +100,7 @@ def convert():
         })
     except Exception as e:
         logger.error(f"Error during conversion: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Error during conversion'}), 500
 
 @app.route('/download/<filename>')
 def download(filename):

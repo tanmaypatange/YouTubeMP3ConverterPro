@@ -19,7 +19,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function fetchVideoInfo() {
         const videoUrl = videoUrlInput.value;
-        if (!videoUrl) return;
+        if (!videoUrl) {
+            showError('Please enter a valid YouTube URL');
+            return;
+        }
 
         console.log('Fetching video info for:', videoUrl);
         const xhr = new XMLHttpRequest();
@@ -27,35 +30,47 @@ document.addEventListener('DOMContentLoaded', function() {
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         xhr.onload = function() {
             if (xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
-                console.log('Video info received:', response);
-                videoThumbnail.src = response.thumbnail;
-                videoTitle.textContent = response.title;
-                fileSizes = response.file_sizes;
-                updateFileSize();
-                videoInfo.classList.remove('d-none');
-                downloadBtn.disabled = false;
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    console.log('Video info received:', response);
+                    videoThumbnail.src = response.thumbnail;
+                    videoTitle.textContent = response.title;
+                    fileSizes = response.file_sizes;
+                    updateFileSize();
+                    videoInfo.classList.remove('d-none');
+                    downloadBtn.disabled = false;
+                } catch (error) {
+                    console.error('Error parsing video info:', error);
+                    showError('Error parsing video information');
+                }
             } else {
                 console.error('Error fetching video information:', xhr.responseText);
-                alert('Error fetching video information');
+                showError('Error fetching video information');
             }
         };
         xhr.onerror = function() {
             console.error('Network error while fetching video information');
-            alert('Network error while fetching video information');
+            showError('Network error while fetching video information');
         };
         xhr.send('video_url=' + encodeURIComponent(videoUrl));
     }
 
     function updateFileSize() {
         const selectedBitrate = bitrateSelect.value;
-        fileSizeInfo.textContent = `Estimated file size: ${fileSizes[selectedBitrate]}`;
+        if (fileSizes && fileSizes[selectedBitrate]) {
+            fileSizeInfo.textContent = `Estimated file size: ${fileSizes[selectedBitrate]}`;
+        } else {
+            fileSizeInfo.textContent = 'File size information not available';
+        }
     }
 
     function convertAndDownload() {
         const videoUrl = videoUrlInput.value;
         const bitrate = bitrateSelect.value;
-        if (!videoUrl) return;
+        if (!videoUrl) {
+            showError('Please enter a valid YouTube URL');
+            return;
+        }
 
         console.log('Starting conversion for:', videoUrl);
         downloadBtn.disabled = true;
@@ -66,21 +81,24 @@ document.addEventListener('DOMContentLoaded', function() {
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         xhr.onload = function() {
             if (xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
-                console.log('Conversion successful:', response);
-                downloadFile(response.filename);
-                downloadBtn.disabled = false;
-                conversionProgress.classList.add('d-none');
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    console.log('Conversion successful:', response);
+                    downloadFile(response.filename);
+                } catch (error) {
+                    console.error('Error parsing conversion response:', error);
+                    showError('Error during conversion');
+                }
             } else {
                 console.error('Error converting video:', xhr.responseText);
-                alert('Error converting video: ' + xhr.responseText);
-                downloadBtn.disabled = false;
-                conversionProgress.classList.add('d-none');
+                showError('Error converting video: ' + xhr.responseText);
             }
+            downloadBtn.disabled = false;
+            conversionProgress.classList.add('d-none');
         };
         xhr.onerror = function() {
             console.error('Network error during conversion');
-            alert('Network error during conversion');
+            showError('Network error during conversion');
             downloadBtn.disabled = false;
             conversionProgress.classList.add('d-none');
         };
@@ -100,5 +118,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function downloadFile(filename) {
         console.log('Downloading file:', filename);
         window.location.href = '/download/' + encodeURIComponent(filename);
+    }
+
+    function showError(message) {
+        alert(message);
     }
 });

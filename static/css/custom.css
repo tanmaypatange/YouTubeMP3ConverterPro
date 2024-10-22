@@ -7,6 +7,7 @@
 body {
   background-color: var(--youtube-black);
   color: var(--youtube-white);
+  font-family: 'Roboto', sans-serif;
 }
 
 .container {
@@ -41,16 +42,14 @@ h1 {
   border-color: #cc0000;
 }
 
-.btn-secondary {
-  background-color: var(--youtube-white);
-  border-color: var(--youtube-white);
-  color: var(--youtube-black);
+.btn-outline-primary {
+  color: var(--youtube-red);
+  border-color: var(--youtube-red);
 }
 
-.btn-secondary:hover {
-  background-color: #f0f0f0;
-  border-color: #f0f0f0;
-  color: var(--youtube-black);
+.btn-outline-primary:hover {
+  background-color: var(--youtube-red);
+  color: var(--youtube-white);
 }
 
 .progress-bar {
@@ -76,6 +75,20 @@ h1 {
 
 #fetch-info:hover, #download-btn:hover {
   animation: pulse 1s infinite;
+}
+
+.input-group {
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.1);
+}
+
+.form-control:focus {
+  border-color: var(--youtube-red);
+  box-shadow: 0 0 0 0.2rem rgba(255, 0, 0, 0.25);
+}
+
+.form-select:focus {
+  border-color: var(--youtube-red);
+  box-shadow: 0 0 0 0.2rem rgba(255, 0, 0, 0.25);
 }
 
 @media (max-width: 768px) {
