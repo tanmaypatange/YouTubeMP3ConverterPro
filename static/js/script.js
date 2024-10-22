@@ -85,11 +85,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const lastLine = lines[lines.length - 2];
             if (lastLine && lastLine.startsWith('data: ')) {
                 const data = JSON.parse(lastLine.substring(6));
+                console.log('Received data:', data);  // Add this line
                 if (data.progress) {
                     updateProgress(parseFloat(data.progress));
                 }
                 if (data.status === 'completed') {
-                    console.log('Conversion completed');
+                    console.log('Conversion completed, filename:', data.filename);
                     downloadFile(data.filename);
                     if (downloadBtn) {
                         downloadBtn.disabled = false;

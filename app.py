@@ -108,11 +108,15 @@ def convert():
                 ydl.download([video_url])
 
             file_path = os.path.join(DOWNLOAD_DIR, filename)
+            logger.info(f"Conversion completed. Checking file: {file_path}")
+            logger.info(f"File exists: {os.path.exists(file_path)}")
             if os.path.exists(file_path):
-                logger.info(f"File successfully created: {file_path}")
+                logger.info(f"File size: {os.path.getsize(file_path)} bytes")
                 yield f"data: {json.dumps({'filename': filename, 'status': 'completed'})}\n\n"
             else:
                 logger.error(f"File not found after conversion: {file_path}")
+                # List all files in the download directory
+                logger.info(f"Files in download directory: {os.listdir(DOWNLOAD_DIR)}")
                 yield f"data: {json.dumps({'error': 'File not found after conversion'})}\n\n"
 
         except Exception as e:
@@ -129,8 +133,11 @@ def download(filename):
     logger.info(f"Download requested for file: {filename}")
     file_path = os.path.join(DOWNLOAD_DIR, filename)
     logger.info(f"Full file path: {file_path}")
+    logger.info(f"File exists: {os.path.exists(file_path)}")
     if not os.path.exists(file_path):
         logger.error(f"File not found: {file_path}")
+        # List all files in the download directory
+        logger.info(f"Files in download directory: {os.listdir(DOWNLOAD_DIR)}")
         return jsonify({'error': f'File not found: {filename}. Please try converting again.'}), 404
     try:
         return send_file(file_path, as_attachment=True)
