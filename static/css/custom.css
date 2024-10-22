@@ -5,8 +5,8 @@
 }
 
 body {
-  background-color: var(--youtube-black);
-  color: var(--youtube-white);
+  background-color: var(--bs-dark);
+  color: var(--bs-light);
   font-family: 'Roboto', sans-serif;
 }
 
@@ -23,7 +23,7 @@ h1 {
 }
 
 .card {
-  background-color: var(--youtube-black);
+  background-color: var(--bs-dark);
   border: 1px solid var(--youtube-red);
   transition: transform 0.3s ease-in-out;
 }
@@ -49,11 +49,19 @@ h1 {
 
 .btn-outline-primary:hover {
   background-color: var(--youtube-red);
-  color: var(--youtube-white);
+  color: var(--bs-light);
+}
+
+.progress {
+  height: 25px;
+  background-color: var(--bs-dark);
+  border: 1px solid var(--youtube-red);
 }
 
 .progress-bar {
   background-color: var(--youtube-red);
+  color: var(--bs-light);
+  font-weight: bold;
 }
 
 #video-thumbnail {
@@ -86,9 +94,13 @@ h1 {
   box-shadow: 0 0 0 0.2rem rgba(255, 0, 0, 0.25);
 }
 
-.form-select:focus {
-  border-color: var(--youtube-red);
-  box-shadow: 0 0 0 0.2rem rgba(255, 0, 0, 0.25);
+#conversion-progress {
+  margin-top: 2rem;
+}
+
+#progress-text {
+  font-weight: bold;
+  color: var(--youtube-red);
 }
 
 @media (max-width: 768px) {

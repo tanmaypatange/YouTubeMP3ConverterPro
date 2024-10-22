@@ -4,8 +4,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const videoInfo = document.getElementById('video-info');
     const videoThumbnail = document.getElementById('video-thumbnail');
     const videoTitle = document.getElementById('video-title');
-    const bitrateSelect = document.getElementById('bitrate');
-    const fileSizeInfo = document.getElementById('file-size');
     const conversionProgress = document.getElementById('conversion-progress');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
@@ -18,9 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     fetchInfoBtn.addEventListener('click', fetchVideoInfo);
-    bitrateSelect.addEventListener('change', updateFileSize);
-
-    let fileSizes = {};
 
     function fetchVideoInfo() {
         const videoUrl = videoUrlInput.value;
@@ -45,12 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     videoThumbnail.src = response.thumbnail;
                     videoTitle.textContent = response.title;
-                    if (response.file_sizes) {
-                        fileSizes = response.file_sizes;
-                        updateFileSize();
-                    } else {
-                        fileSizeInfo.textContent = 'File size information not available';
-                    }
                     videoInfo.classList.remove('d-none');
                     if (downloadBtn) {
                         downloadBtn.disabled = false;
@@ -71,18 +60,8 @@ document.addEventListener('DOMContentLoaded', function() {
         xhr.send('video_url=' + encodeURIComponent(videoUrl));
     }
 
-    function updateFileSize() {
-        const selectedBitrate = bitrateSelect.value;
-        if (fileSizes && fileSizes[selectedBitrate]) {
-            fileSizeInfo.textContent = `Estimated file size: ${fileSizes[selectedBitrate]}`;
-        } else {
-            fileSizeInfo.textContent = 'File size information not available';
-        }
-    }
-
     function convertAndDownload() {
         const videoUrl = videoUrlInput.value;
-        const bitrate = bitrateSelect.value;
         if (!videoUrl) {
             showError('Please enter a valid YouTube URL');
             return;
@@ -128,17 +107,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             conversionProgress.classList.add('d-none');
         };
-        xhr.upload.onprogress = function(event) {
+        xhr.onprogress = function(event) {
             if (event.lengthComputable) {
                 const percentComplete = (event.loaded / event.total) * 100;
-                console.log('Conversion progress:', percentComplete.toFixed(2) + '%');
-                progressBar.style.width = percentComplete + '%';
-                progressBar.setAttribute('aria-valuenow', percentComplete);
-                progressBar.textContent = percentComplete.toFixed(0) + '%';
-                progressText.textContent = `Converting... ${percentComplete.toFixed(0)}%`;
+                updateProgress(percentComplete);
             }
         };
-        xhr.send('video_url=' + encodeURIComponent(videoUrl) + '&bitrate=' + encodeURIComponent(bitrate));
+        xhr.send('video_url=' + encodeURIComponent(videoUrl));
+    }
+
+    function updateProgress(percent) {
+        console.log('Conversion progress:', percent.toFixed(2) + '%');
+        progressBar.style.width = percent + '%';
+        progressBar.setAttribute('aria-valuenow', percent);
+        progressBar.textContent = percent.toFixed(0) + '%';
+        progressText.textContent = `Converting... ${percent.toFixed(0)}%`;
     }
 
     function downloadFile(filename) {
