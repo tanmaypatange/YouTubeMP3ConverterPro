@@ -125,11 +125,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function downloadFile(filename) {
-        console.log('Downloading file:', filename);
+        console.log('Attempting to download file:', filename);
         fetch('/download/' + encodeURIComponent(filename))
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    console.error('Server response not OK:', response.status, response.statusText);
+                    return response.text().then(text => { throw new Error(text) });
                 }
                 return response.blob();
             })
@@ -142,10 +143,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
+                console.log('File download initiated successfully');
             })
             .catch(error => {
                 console.error('Error downloading file:', error);
-                showError('Error downloading file. Please try again.');
+                showError('Error downloading file: ' + error.message);
             });
     }
 

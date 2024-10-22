@@ -8,6 +8,7 @@ import glob
 from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context
 from googleapiclient.discovery import build
 import yt_dlp
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
@@ -103,19 +104,11 @@ def convert():
             if converted_files:
                 actual_filename = os.path.basename(converted_files[0])
                 logger.info(f"Actual file created: {actual_filename}")
+                yield f"data: {json.dumps({'filename': actual_filename, 'status': 'completed'})}\n\n"
             else:
                 logger.error("No MP3 file found in downloads directory")
                 yield f"data: {json.dumps({'error': 'No MP3 file found after conversion'})}\n\n"
                 return
-
-            output_path = f'downloads/{actual_filename}'
-            if not os.path.exists(output_path):
-                logger.error(f"File not found: {output_path}")
-                yield f"data: {json.dumps({'error': 'File not found after conversion'})}\n\n"
-                return
-
-            logger.info(f"Conversion completed for video: {title}")
-            yield f"data: {json.dumps({'filename': actual_filename, 'status': 'completed'})}\n\n"
 
         except Exception as e:
             logger.error(f"Error during conversion: {str(e)}")
@@ -128,14 +121,18 @@ def convert():
 
 @app.route('/download/<filename>')
 def download(filename):
-    logger.info(f"Downloading file: {filename}")
-    safe_filename = re.sub(r'[^\w\-_\. ]', '', filename)
-    safe_filename = safe_filename.replace(' ', '_')
+    logger.info(f"Download requested for file: {filename}")
+    safe_filename = secure_filename(filename)
     file_path = os.path.join('downloads', safe_filename)
+    logger.info(f"Attempting to send file: {file_path}")
     if not os.path.exists(file_path):
         logger.error(f"File not found: {file_path}")
-        return jsonify({'error': 'File not found'}), 404
-    return send_file(file_path, as_attachment=True)
+        return jsonify({'error': f'File not found: {safe_filename}'}), 404
+    try:
+        return send_file(file_path, as_attachment=True)
+    except Exception as e:
+        logger.error(f"Error sending file: {str(e)}")
+        return jsonify({'error': f'Error sending file: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
