@@ -35,14 +35,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('Raw response:', xhr.responseText);
                     console.log('Parsed response:', response);
 
-                    if (!response.title || !response.thumbnail || !response.file_sizes) {
+                    if (!response.title || !response.thumbnail) {
                         throw new Error('Incomplete video information received');
                     }
-
                     videoThumbnail.src = response.thumbnail;
                     videoTitle.textContent = response.title;
-                    fileSizes = response.file_sizes;
-                    updateFileSize();
+                    if (response.file_sizes) {
+                        fileSizes = response.file_sizes;
+                        updateFileSize();
+                    } else {
+                        fileSizeInfo.textContent = 'File size information not available';
+                    }
                     videoInfo.classList.remove('d-none');
                     downloadBtn.disabled = false;
                 } catch (error) {
