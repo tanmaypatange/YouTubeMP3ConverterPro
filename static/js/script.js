@@ -129,6 +129,9 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/download/' + encodeURIComponent(filename))
             .then(response => {
                 if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('File not found. Please try converting again.');
+                    }
                     return response.json().then(data => {
                         throw new Error(data.error || 'Unknown error occurred');
                     });

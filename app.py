@@ -5,6 +5,7 @@ import re
 import json
 import time
 import glob
+import uuid
 from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context
 from googleapiclient.discovery import build
 import yt_dlp
@@ -85,10 +86,10 @@ def convert():
                     logger.error(f"Failed to extract video information for URL: {video_url}")
                     yield f"data: {json.dumps({'error': 'Failed to extract video information'})}\n\n"
                     return
-                title = info['title']
-                safe_title = re.sub(r'[^\w\-_\. ]', '_', title)
-                safe_title = safe_title.replace(' ', '_')
-                filename = f"{safe_title}.mp3"
+                
+                unique_id = str(uuid.uuid4())
+                safe_title = re.sub(r'[^\w\-_\.]', '_', info['title'])
+                filename = f"{safe_title[:30]}_{unique_id}.mp3"
                 
                 ydl_opts = {
                     'format': 'bestaudio/best',
@@ -103,11 +104,12 @@ def convert():
 
             start_time = time.time()
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                logger.info(f"Starting download for video: {title}")
+                logger.info(f"Starting download for video: {info['title']}")
                 ydl.download([video_url])
 
             file_path = os.path.join(DOWNLOAD_DIR, filename)
             if os.path.exists(file_path):
+                logger.info(f"File successfully created: {file_path}")
                 yield f"data: {json.dumps({'filename': filename, 'status': 'completed'})}\n\n"
             else:
                 logger.error(f"File not found after conversion: {file_path}")
@@ -126,15 +128,15 @@ def convert():
 def download(filename):
     logger.info(f"Download requested for file: {filename}")
     file_path = os.path.join(DOWNLOAD_DIR, filename)
-    logger.info(f"Attempting to send file: {file_path}")
+    logger.info(f"Full file path: {file_path}")
     if not os.path.exists(file_path):
         logger.error(f"File not found: {file_path}")
-        return jsonify({'error': f'File not found: {filename}'}), 404
+        return jsonify({'error': f'File not found: {filename}. Please try converting again.'}), 404
     try:
         return send_file(file_path, as_attachment=True)
     except Exception as e:
         logger.error(f"Error sending file: {str(e)}")
-        return jsonify({'error': f'Error sending file: {str(e)}'}), 500
+        return jsonify({'error': f'Error sending file: {str(e)}. Please try again.'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
