@@ -10,4 +10,5 @@ dependencies = [
     "psycopg2-binary>=2.9.10",
     "google-api-python-client>=2.149.0",
     "yt-dlp>=2024.10.22",
+    "ffmpeg-python>=0.2.0",
 ]

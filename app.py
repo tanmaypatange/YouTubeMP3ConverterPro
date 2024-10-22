@@ -3,6 +3,7 @@ import urllib.parse
 from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 from googleapiclient.discovery import build
+import ffmpeg
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
@@ -41,23 +42,35 @@ def convert():
     
     ydl_opts = {
         'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
         'outtmpl': 'downloads/%(title)s.%(ext)s',
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(video_url, download=True)
         filename = ydl.prepare_filename(info)
-        mp3_filename = os.path.splitext(filename)[0] + '.mp3'
     
-    return jsonify({
-        'filename': os.path.basename(mp3_filename),
-        'filesize': os.path.getsize(mp3_filename)
-    })
+    # Convert the downloaded file to mp3 using ffmpeg
+    input_file = filename
+    output_file = os.path.splitext(filename)[0] + '.mp3'
+    
+    try:
+        (
+            ffmpeg
+            .input(input_file)
+            .output(output_file, acodec='libmp3lame', audio_bitrate='192k')
+            .overwrite_output()
+            .run(capture_stdout=True, capture_stderr=True)
+        )
+        
+        # Remove the original downloaded file
+        os.remove(input_file)
+        
+        return jsonify({
+            'filename': os.path.basename(output_file),
+            'filesize': os.path.getsize(output_file)
+        })
+    except ffmpeg.Error as e:
+        return jsonify({'error': str(e.stderr.decode())}), 500
 
 @app.route('/download/<filename>')
 def download(filename):
