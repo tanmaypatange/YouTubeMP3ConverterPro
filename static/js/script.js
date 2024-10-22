@@ -126,11 +126,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function downloadFile(filename) {
         console.log('Attempting to download file:', filename);
-        fetch('/download/' + filename)
+        fetch('/download/' + encodeURIComponent(filename))
             .then(response => {
                 if (!response.ok) {
-                    console.error('Server response not OK:', response.status, response.statusText);
-                    return response.text().then(text => { throw new Error(text) });
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Unknown error occurred');
+                    });
                 }
                 return response.blob();
             })
@@ -146,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('File download initiated successfully');
             })
             .catch(error => {
-                console.error('Error downloading file:', error);
+                console.error('Error downloading file:', error.message);
                 showError('Error downloading file: ' + error.message);
             });
     }

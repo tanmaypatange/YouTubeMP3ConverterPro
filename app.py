@@ -5,7 +5,6 @@ import re
 import json
 import time
 import glob
-import tempfile
 from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context
 from googleapiclient.discovery import build
 import yt_dlp
@@ -20,6 +19,11 @@ logger = logging.getLogger(__name__)
 # YouTube API key from environment variable
 YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
 youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+
+# Create a persistent download directory
+DOWNLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'downloads')
+if not os.path.exists(DOWNLOAD_DIR):
+    os.makedirs(DOWNLOAD_DIR)
 
 @app.route('/')
 def index():
@@ -93,7 +97,7 @@ def convert():
                         'preferredcodec': 'mp3',
                         'preferredquality': '128',
                     }],
-                    'outtmpl': os.path.join(tempfile.gettempdir(), filename),
+                    'outtmpl': os.path.join(DOWNLOAD_DIR, filename),
                     'progress_hooks': [progress_hook],
                 }
 
@@ -102,7 +106,12 @@ def convert():
                 logger.info(f"Starting download for video: {title}")
                 ydl.download([video_url])
 
-            yield f"data: {json.dumps({'filename': filename, 'status': 'completed'})}\n\n"
+            file_path = os.path.join(DOWNLOAD_DIR, filename)
+            if os.path.exists(file_path):
+                yield f"data: {json.dumps({'filename': filename, 'status': 'completed'})}\n\n"
+            else:
+                logger.error(f"File not found after conversion: {file_path}")
+                yield f"data: {json.dumps({'error': 'File not found after conversion'})}\n\n"
 
         except Exception as e:
             logger.error(f"Error during conversion: {str(e)}")
@@ -116,7 +125,7 @@ def convert():
 @app.route('/download/<path:filename>')
 def download(filename):
     logger.info(f"Download requested for file: {filename}")
-    file_path = os.path.join(tempfile.gettempdir(), filename)
+    file_path = os.path.join(DOWNLOAD_DIR, filename)
     logger.info(f"Attempting to send file: {file_path}")
     if not os.path.exists(file_path):
         logger.error(f"File not found: {file_path}")
